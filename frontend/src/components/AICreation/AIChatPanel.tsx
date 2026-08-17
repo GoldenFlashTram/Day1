@@ -451,14 +451,13 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
       return
     }
 
-    if ((!inputText.trim() && !generationMode) || !projectId) return
+    if ((!inputText.trim() && !generationMode && !selectedText) || !projectId) return
 
-    // 选区引用拼装：非 generate/fill 模式时，把选区作为引用块并入 user_input（Cursor 式）
-    // generate/fill 模式语义是全量生成/补齐，选区无意义，不拼（守卫）
-    const isSelectionMode = generationMode !== 'generate' && generationMode !== 'fill'
+    // 选区引用拼装：把选区作为引用块并入 user_input（Cursor 式）
+    // 所有模式（含 generate/fill）均拼入选区引用，让 AI 针对选区做生成/补齐
     const rawInput = inputText.trim()
     let userInput = rawInput
-    if (selectedText && isSelectionMode) {
+    if (selectedText) {
       const quoted = selectedText.slice(0, 2000)
       const quoteBlock = `\n\n【用户引用的原文】\n<引用块开始>\n${quoted}\n<引用块结束>`
       if (userInput) {

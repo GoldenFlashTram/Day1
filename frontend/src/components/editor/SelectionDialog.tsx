@@ -5,7 +5,7 @@
  * floating "📎 处理选区" button. Provides:
  *  - Read-only original text display with length counter
  *  - Editable TextArea pre-filled with original
- *  - Actions: 发送给AI对话 / 替换原文 / 复制 / AI润色 / AI审查
+ *  - Actions: 发送给AI对话 / 替换原文 / 复制 / AI润色 / AI审查 / AI补齐 / AI校对
  */
 import { useEffect, useState } from 'react'
 import { Modal, Input, Button, Tag, message, Spin, Collapse, Typography } from 'antd'
@@ -15,6 +15,8 @@ import {
   CopyOutlined,
   BulbOutlined,
   SafetyCertificateOutlined,
+  FileAddOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import type { CellInfo } from '../../types/template'
 
@@ -31,6 +33,8 @@ export interface SelectionDialogProps {
   onReplaceCell: (cellInfo: CellInfo, newText: string) => void
   onPolish: (text: string) => Promise<string>
   onReview: (text: string) => Promise<string>
+  onFill: (text: string) => Promise<string>
+  onProofread: (text: string) => Promise<string>
 }
 
 const SelectionDialog: React.FC<SelectionDialogProps> = ({
@@ -43,10 +47,14 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
   onReplaceCell,
   onPolish,
   onReview,
+  onFill,
+  onProofread,
 }) => {
   const [editedText, setEditedText] = useState(selectedText)
   const [polishLoading, setPolishLoading] = useState(false)
   const [reviewLoading, setReviewLoading] = useState(false)
+  const [fillLoading, setFillLoading] = useState(false)
+  const [proofreadLoading, setProofreadLoading] = useState(false)
   const [reviewResult, setReviewResult] = useState<string | null>(null)
 
   // Sync editedText when dialog opens with new selectedText
@@ -106,6 +114,33 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
       setReviewLoading(false)
     }
   }
+
+  const handleFill = async () => {
+    setFillLoading(true)
+    try {
+      const result = await onFill(editedText)
+      setEditedText(result)
+      message.success('AI补齐完成')
+    } catch {
+      message.error('AI补齐失败，请检查后端服务')
+    } finally {
+      setFillLoading(false)
+    }
+  }
+
+  const handleProofread = async () => {
+    setProofreadLoading(true)
+    try {
+      const result = await onProofread(editedText)
+      setReviewResult(result)
+    } catch {
+      message.error('AI校对失败，请检查后端服务')
+    } finally {
+      setProofreadLoading(false)
+    }
+  }
+
+  const anyAiLoading = polishLoading || reviewLoading || fillLoading || proofreadLoading
 
   return (
     <Modal
@@ -196,27 +231,43 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
           icon={<BulbOutlined />}
           onClick={handlePolish}
           loading={polishLoading}
-          disabled={!editedText.trim()}
+          disabled={!editedText.trim() || anyAiLoading}
         >
           AI润色
+        </Button>
+        <Button
+          icon={<FileAddOutlined />}
+          onClick={handleFill}
+          loading={fillLoading}
+          disabled={!editedText.trim() || anyAiLoading}
+        >
+          AI补齐
         </Button>
         <Button
           icon={<SafetyCertificateOutlined />}
           onClick={handleReview}
           loading={reviewLoading}
-          disabled={!editedText.trim()}
+          disabled={!editedText.trim() || anyAiLoading}
         >
           AI审查
         </Button>
+        <Button
+          icon={<CheckCircleOutlined />}
+          onClick={handleProofread}
+          loading={proofreadLoading}
+          disabled={!editedText.trim() || anyAiLoading}
+        >
+          AI校对
+        </Button>
       </div>
 
-      {/* 审查结果 */}
-      {reviewLoading && (
+      {/* 审查/校对结果 */}
+      {(reviewLoading || proofreadLoading) && (
         <div style={{ textAlign: 'center', padding: 12 }}>
-          <Spin tip="AI审查中..." />
+          <Spin tip={proofreadLoading ? 'AI校对中...' : 'AI审查中...'} />
         </div>
       )}
-      {reviewResult && !reviewLoading && (
+      {reviewResult && !reviewLoading && !proofreadLoading && (
         <Collapse
           defaultActiveKey={['review']}
           style={{ marginTop: 8 }}

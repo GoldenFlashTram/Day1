@@ -142,6 +142,34 @@ const WorkspacePage: React.FC = () => {
     ).join('\n')
   }, [])
 
+  // 选区弹窗：AI补齐
+  const handleSelectionFill = useCallback(async (text: string): Promise<string> => {
+    const resp = await fetch('http://localhost:8000/api/assistant/quick-actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'expand', text }),
+    })
+    if (!resp.ok) throw new Error('fill failed')
+    const data = await resp.json()
+    return data.result || data.text || text
+  }, [])
+
+  // 选区弹窗：AI校对
+  const handleSelectionProofread = useCallback(async (text: string): Promise<string> => {
+    const resp = await fetch('http://localhost:8000/api/tasks/proofread', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text }),
+    })
+    if (!resp.ok) throw new Error('proofread failed')
+    const data = await resp.json()
+    const corrections = data.corrections || data.issues || data.result?.issues || []
+    if (corrections.length === 0) return '校对通过，未发现术语或格式问题。'
+    return corrections.map((c: { type: string; message: string; original: string; suggestion: string }) =>
+      `[${c.type || '校对'}] ${c.message || ''}${c.suggestion ? ` → 建议: ${c.suggestion}` : ''}`
+    ).join('\n')
+  }, [])
+
   // UI状态
   const [imageModalVisible, setImageModalVisible] = useState(false)
   // Left sidebar: which panel is active ('materials' | 'settings' | null)
@@ -1073,6 +1101,8 @@ const WorkspacePage: React.FC = () => {
         onReplaceCell={handleSelectionReplaceCell}
         onPolish={handleSelectionPolish}
         onReview={handleSelectionReview}
+        onFill={handleSelectionFill}
+        onProofread={handleSelectionProofread}
       />
     </div>
   )
