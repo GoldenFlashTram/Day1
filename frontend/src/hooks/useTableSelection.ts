@@ -11,11 +11,15 @@ import type { CellInfo } from '../types/template'
 export interface TableSelectionInfo {
   text: string
   cellInfo: CellInfo
+  originalLength: number
+  isTruncated: boolean
 }
 
 export interface TableSelectionPosition {
   top: number
   left: number
+  width: number
+  height: number
 }
 
 interface UseTableSelectionOptions {
@@ -78,7 +82,7 @@ export function useTableSelection(
   sectionIndex: number,
   options: UseTableSelectionOptions = {},
 ): UseTableSelectionReturn {
-  const { maxLength = 500, debounceMs = 150 } = options
+  const { maxLength = 200, debounceMs = 150 } = options
   const [selection, setSelection] = useState<TableSelectionInfo | null>(null)
   const [position, setPosition] = useState<TableSelectionPosition | null>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -124,15 +128,18 @@ export function useTableSelection(
     }
 
     // Truncate to maxLength
-    const truncated = text.length > maxLength ? text.slice(0, maxLength) : text
+    const isTruncated = text.length > maxLength
+    const truncated = isTruncated ? text.slice(0, maxLength) : text
 
-    // Compute floating button position from range rect
+    // Compute selection box position + dimensions from range rect
     const rect = range.getBoundingClientRect()
 
-    setSelection({ text: truncated, cellInfo })
+    setSelection({ text: truncated, cellInfo, originalLength: text.length, isTruncated })
     setPosition({
       top: rect.top,
-      left: (rect.left + rect.right) / 2,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
     })
     setIsVisible(true)
   }, [containerRef, sectionIndex, maxLength])

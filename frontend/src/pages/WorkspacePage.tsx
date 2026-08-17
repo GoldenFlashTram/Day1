@@ -1095,7 +1095,7 @@ const WorkspacePage: React.FC = () => {
         open={selectionDialogOpen}
         selectedText={selectionDialogText}
         cellInfo={selectionDialogCellInfo}
-        maxLength={500}
+        maxLength={200}
         onClose={() => setSelectionDialogOpen(false)}
         onSendToChat={handleSelectionSendToChat}
         onReplaceCell={handleSelectionReplaceCell}
