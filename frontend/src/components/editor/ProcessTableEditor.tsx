@@ -24,7 +24,7 @@ import {
   shiftMerges,
   splitMerge,
 } from './mergeUtils'
-import { useTableSelection } from '../../hooks/useTableSelection'
+import { useDragSelection } from '../../hooks/useDragSelection'
 
 interface Props {
   section: TemplateSection
@@ -136,15 +136,15 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex =
   const [rowTop, setRowTop] = useState(0)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: string } | null>(null)
 
-  // --- Table text selection (for "📎 处理选区" floating button) ---
-  const { selection: tableSelection, position: tableSelPos, isVisible: isSelVisible } =
-    useTableSelection(containerRef, sectionIndex, { maxLength: 200 })
+  // --- Windows-style drag selection (draw rectangle to select cells) ---
+  const { selection: dragSelection, isVisible: isSelVisible, dragRect } =
+    useDragSelection(containerRef, sectionIndex, { maxLength: 200 })
 
   const handlePasteSelection = useCallback(() => {
-    if (tableSelection && onPasteToChat) {
-      onPasteToChat(tableSelection.text, tableSelection.cellInfo)
+    if (dragSelection && onPasteToChat) {
+      onPasteToChat(dragSelection.text, dragSelection.cellInfo)
     }
-  }, [tableSelection, onPasteToChat])
+  }, [dragSelection, onPasteToChat])
 
   return (
     <div ref={containerRef} style={{ width: '100%', overflowX: 'auto', position: 'relative' }}>
@@ -356,58 +356,53 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex =
         </div>
       )}
 
-      {/* Selection highlight box + floating "📎 处理选区" small box */}
-      {onPasteToChat && isSelVisible && tableSelection && tableSelPos && (
-        <>
-          {/* Selection highlight outline — wraps the selected text area */}
-          <div
-            style={{
-              position: 'fixed',
-              top: tableSelPos.top - 2,
-              left: tableSelPos.left - 2,
-              width: tableSelPos.width + 4,
-              height: tableSelPos.height + 4,
-              border: '2px solid #1890ff',
-              borderRadius: 3,
-              background: 'rgba(24, 144, 255, 0.08)',
-              pointerEvents: 'none',
-              zIndex: 999,
-            }}
-          />
-          {/* Compact floating box — appears above the selection */}
-          <div
-            style={{
-              position: 'fixed',
-              top: Math.max(8, tableSelPos.top - 36),
-              left: tableSelPos.left,
-              zIndex: 1000,
-              background: '#1890ff',
-              color: '#fff',
-              borderRadius: 6,
-              padding: '3px 8px',
-              fontSize: 11,
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(24,144,255,0.4)',
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              maxWidth: 200,
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handlePasteSelection}
-          >
-            <span>📎</span>
-            <span>处理选区</span>
-            <span style={{ opacity: 0.7, fontSize: 10 }}>
-              {tableSelection.originalLength}{tableSelection.isTruncated ? `/${tableSelection.originalLength}字` : '字'}
-            </span>
-            {tableSelection.isTruncated && (
-              <span style={{ color: '#ffd666', fontSize: 10, fontWeight: 600 }}>截断</span>
-            )}
-          </div>
-        </>
+      {/* Windows-style drag selection rectangle */}
+      {dragRect && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.min(dragRect.startX, dragRect.endX),
+            top: Math.min(dragRect.startY, dragRect.endY),
+            width: Math.abs(dragRect.endX - dragRect.startX),
+            height: Math.abs(dragRect.endY - dragRect.startY),
+            background: 'rgba(24, 144, 255, 0.12)',
+            border: '1px solid #1890ff',
+            pointerEvents: 'none',
+            zIndex: 999,
+          }}
+        />
+      )}
+
+      {/* Floating action box — appears after drag selection completes */}
+      {onPasteToChat && isSelVisible && dragSelection && (
+        <div
+          style={{
+            position: 'fixed',
+            top: Math.max(8, (dragRect?.startY ?? 100) - 36),
+            left: Math.min(window.innerWidth - 160, dragRect?.startX ?? 100),
+            zIndex: 1000,
+            background: '#1890ff',
+            color: '#fff',
+            borderRadius: 6,
+            padding: '4px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(24,144,255,0.45)',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handlePasteSelection}
+        >
+          <span>📎</span>
+          <span>处理选区</span>
+          <span style={{ opacity: 0.8, fontSize: 11 }}>
+            {dragSelection.originalLength}字{dragSelection.isTruncated ? ' (已截断)' : ''}
+          </span>
+        </div>
       )}
     </div>
   )
