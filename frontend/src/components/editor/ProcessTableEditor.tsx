@@ -13,7 +13,7 @@ import {
   ColumnHeightOutlined,
   BorderInnerOutlined,
 } from '@ant-design/icons'
-import type { CellMerge, TemplateSection } from '../../types/template'
+import type { CellMerge, TemplateSection, CellInfo } from '../../types/template'
 import { getLayout } from './processDocumentLayouts'
 import {
   cellStateFor,
@@ -24,10 +24,13 @@ import {
   shiftMerges,
   splitMerge,
 } from './mergeUtils'
+import { useTableSelection } from '../../hooks/useTableSelection'
 
 interface Props {
   section: TemplateSection
   onChange: (section: TemplateSection) => void
+  sectionIndex?: number
+  onPasteToChat?: (text: string, cellInfo: CellInfo) => void
 }
 
 const cellStyle: React.CSSProperties = {
@@ -72,8 +75,9 @@ const infoCellStyle: React.CSSProperties = {
   fontSize: 12,
 }
 
-const ProcessTableEditor: React.FC<Props> = ({ section, onChange }) => {
+const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex = 0, onPasteToChat }) => {
   const tableRef = useRef<HTMLTableElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const chapterCode = section.section_id
   const layout = getLayout(chapterCode)
 
@@ -128,10 +132,19 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange }) => {
   }
 
   // --- Hover state ---
-  const containerRef = useRef<HTMLDivElement>(null)
   const [hoveredRow, setHoveredRow] = useState<number | null>(null)
   const [rowTop, setRowTop] = useState(0)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: string } | null>(null)
+
+  // --- Table text selection (for "📎 处理选区" floating button) ---
+  const { selection: tableSelection, position: tableSelPos, isVisible: isSelVisible } =
+    useTableSelection(containerRef, sectionIndex, { maxLength: 500 })
+
+  const handlePasteSelection = useCallback(() => {
+    if (tableSelection && onPasteToChat) {
+      onPasteToChat(tableSelection.text, tableSelection.cellInfo)
+    }
+  }, [tableSelection, onPasteToChat])
 
   return (
     <div ref={containerRef} style={{ width: '100%', overflowX: 'auto', position: 'relative' }}>
@@ -267,6 +280,7 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange }) => {
                       rowSpan={state.kind === 'merge-start' ? state.rowSpan : undefined}
                       contentEditable
                       suppressContentEditableWarning
+                      data-col-key={col.key}
                       onMouseEnter={() => setHoveredCell({ row: ri, col: col.key })}
                       onMouseLeave={() => setHoveredCell(null)}
                       style={{
@@ -339,6 +353,31 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange }) => {
               />
             </Tooltip>
           )}
+        </div>
+      )}
+
+      {/* Floating "📎 处理选区" button — appears when text is selected in a cell */}
+      {onPasteToChat && isSelVisible && tableSelection && tableSelPos && (
+        <div
+          style={{
+            position: 'fixed',
+            top: Math.max(8, tableSelPos.top - 40),
+            left: tableSelPos.left - 50,
+            zIndex: 1000,
+            background: '#1890ff',
+            color: '#fff',
+            borderRadius: 4,
+            padding: '4px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handlePasteSelection}
+        >
+          📎 处理选区
         </div>
       )}
     </div>

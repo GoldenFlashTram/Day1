@@ -21,7 +21,8 @@ import { EmptyStateIllustration } from '../components/Illustrations/RecordingAni
 import InlineDiff, { FloatingConfirmBar } from '../components/common/InlineDiff'
 import MarkdownTiptapEditor from '../components/common/MarkdownTiptapEditor'
 import TemplateContentEditor from '../components/editor/TemplateContentEditor'
-import type { TemplateSection } from '../types/template'
+import SelectionDialog from '../components/editor/SelectionDialog'
+import type { TemplateSection, CellInfo } from '../types/template'
 import ProcessContentView from '../components/common/ProcessContentView'
 import { markdownToHtml } from '../utils/markdownConverter'
 import { structuredDocToSections } from '../utils/templateTransform'
@@ -94,6 +95,53 @@ const WorkspacePage: React.FC = () => {
     [currentProjectId, setEditorContent],
   )
 
+  // 选区弹窗：发送给AI对话
+  const handleSelectionSendToChat = useCallback((text: string) => {
+    _setSelectedText(text)
+  }, [])
+
+  // 选区弹窗：替换单元格原文
+  const handleSelectionReplaceCell = useCallback((cellInfo: CellInfo, newText: string) => {
+    const sections = templateSections
+    if (cellInfo.sectionIndex < 0 || cellInfo.sectionIndex >= sections.length) return
+    const section = sections[cellInfo.sectionIndex]
+    const rows = [...(section.rows || [])]
+    if (cellInfo.rowIndex < 0 || cellInfo.rowIndex >= rows.length) return
+    rows[cellInfo.rowIndex] = { ...rows[cellInfo.rowIndex], [cellInfo.colKey]: newText }
+    const updatedSection = { ...section, rows }
+    const next = [...sections]
+    next[cellInfo.sectionIndex] = updatedSection
+    handleTemplateSectionsChange(next)
+  }, [templateSections, handleTemplateSectionsChange])
+
+  // 选区弹窗：AI润色
+  const handleSelectionPolish = useCallback(async (text: string): Promise<string> => {
+    const resp = await fetch('http://localhost:8000/api/assistant/quick-actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'polish', text }),
+    })
+    if (!resp.ok) throw new Error('polish failed')
+    const data = await resp.json()
+    return data.result || data.text || text
+  }, [])
+
+  // 选区弹窗：AI审查
+  const handleSelectionReview = useCallback(async (text: string): Promise<string> => {
+    const resp = await fetch('http://localhost:8000/api/tasks/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text, domain: 'assembly' }),
+    })
+    if (!resp.ok) throw new Error('review failed')
+    const data = await resp.json()
+    const issues = data.issues || data.result?.issues || []
+    if (issues.length === 0) return '审查通过，未发现问题。'
+    return issues.map((i: { severity: string; message: string; type: string }) =>
+      `[${i.severity || i.type}] ${i.message}`
+    ).join('\n')
+  }, [])
+
   // UI状态
   const [imageModalVisible, setImageModalVisible] = useState(false)
   // Left sidebar: which panel is active ('materials' | 'settings' | null)
@@ -102,6 +150,11 @@ const WorkspacePage: React.FC = () => {
 
   // AI交互状态
   const [_selectedText, _setSelectedText] = useState('')
+
+  // 选区处理弹窗状态
+  const [selectionDialogOpen, setSelectionDialogOpen] = useState(false)
+  const [selectionDialogText, setSelectionDialogText] = useState('')
+  const [selectionDialogCellInfo, setSelectionDialogCellInfo] = useState<CellInfo | null>(null)
 
   // 预览模式状态（智能写作结果预览）
   const [previewMode, setPreviewMode] = useState(false)
@@ -872,6 +925,11 @@ const WorkspacePage: React.FC = () => {
                     <TemplateContentEditor
                       sections={templateSections}
                       onChange={handleTemplateSectionsChange}
+                      onPasteToChat={(text, cellInfo) => {
+                        setSelectionDialogText(text)
+                        setSelectionDialogCellInfo(cellInfo)
+                        setSelectionDialogOpen(true)
+                      }}
                     />
                   ) : (
                     <MarkdownTiptapEditor
@@ -1003,6 +1061,19 @@ const WorkspacePage: React.FC = () => {
           </p>
         </div>
       </Modal>
+
+      {/* 选区处理弹窗 */}
+      <SelectionDialog
+        open={selectionDialogOpen}
+        selectedText={selectionDialogText}
+        cellInfo={selectionDialogCellInfo}
+        maxLength={500}
+        onClose={() => setSelectionDialogOpen(false)}
+        onSendToChat={handleSelectionSendToChat}
+        onReplaceCell={handleSelectionReplaceCell}
+        onPolish={handleSelectionPolish}
+        onReview={handleSelectionReview}
+      />
     </div>
   )
 }

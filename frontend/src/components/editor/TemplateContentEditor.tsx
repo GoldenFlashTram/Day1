@@ -6,7 +6,7 @@
  */
 import { useCallback } from 'react'
 import { Empty, Typography } from 'antd'
-import type { TemplateSection } from '../../types/template'
+import type { TemplateSection, CellInfo } from '../../types/template'
 import ProcessTableEditor from './ProcessTableEditor'
 
 const { Title } = Typography
@@ -14,9 +14,10 @@ const { Title } = Typography
 interface Props {
   sections: TemplateSection[]
   onChange: (sections: TemplateSection[]) => void
+  onPasteToChat?: (text: string, cellInfo: CellInfo) => void
 }
 
-const TemplateContentEditor: React.FC<Props> = ({ sections, onChange }) => {
+const TemplateContentEditor: React.FC<Props> = ({ sections, onChange, onPasteToChat }) => {
   const handleSectionChange = useCallback(
     (index: number, updated: TemplateSection) => {
       const next = [...sections]
@@ -43,7 +44,9 @@ const TemplateContentEditor: React.FC<Props> = ({ sections, onChange }) => {
 
           <ProcessTableEditor
             section={section}
+            sectionIndex={idx}
             onChange={(s) => handleSectionChange(idx, s)}
+            onPasteToChat={onPasteToChat}
           />
         </div>
       ))}
