@@ -34,7 +34,7 @@ const PDFViewerDrawer: React.FC<PDFViewerDrawerProps> = ({
   const fetchDocuments = async () => {
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:8000/api/process-documents/')
+      const response = await fetch('/api/process-documents/')
       if (response.ok) {
         const data = await response.json()
         setDocuments(data.documents || [])

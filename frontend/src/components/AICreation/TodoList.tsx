@@ -68,7 +68,7 @@ export const TodoList: React.FC<TodoListProps> = ({
     if (newStatus === 'completed' && sessionId) {
       try {
         const response = await fetch(
-          `http://localhost:8000/api/agent/todos/${sessionId}/${todoId}/complete`,
+          `/api/agent/todos/${sessionId}/${todoId}/complete`,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' }

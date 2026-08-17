@@ -100,7 +100,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       message.loading('正在确认落稿并导出...', 0)
       
       // 1. 先保存到风格库
-      const styleResponse = await fetch('http://localhost:8000/api/style/articles', {
+      const styleResponse = await fetch('/api/style/articles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -115,7 +115,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       }
 
       // 2. 导出Word
-      const exportResponse = await fetch('http://localhost:8000/api/export/word', {
+      const exportResponse = await fetch('/api/export/word', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

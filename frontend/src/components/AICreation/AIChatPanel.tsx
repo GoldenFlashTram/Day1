@@ -165,7 +165,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
     let contentAccumulator = ''
 
     try {
-      const response = await fetch('http://localhost:8000/api/agent/select-plan', {
+      const response = await fetch('/api/agent/select-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -314,7 +314,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
     setStreamController(controller)
 
     try {
-      const response = await fetch('http://localhost:8000/api/agent/reply-question-stream', {
+      const response = await fetch('/api/agent/reply-question-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -512,7 +512,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
         }
       }
       
-      const response = await fetch('http://localhost:8000/api/agent/generate-stream', {
+      const response = await fetch('/api/agent/generate-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -837,7 +837,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
       const body: Record<string, unknown> = { content, check_type: 'all', domain }
       if (mode === 'review') body.standards = 'enterprise,safety'
 
-      const res = await fetch(`http://localhost:8000${endpoint}`, {
+      const res = await fetch(`${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -888,7 +888,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await fetch('http://localhost:8000/api/drafts/upload-temp', {
+      const response = await fetch('/api/drafts/upload-temp', {
         method: 'POST',
         body: formData,
       })
@@ -1144,7 +1144,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
                           if (!sessionId) return
                           
                           try {
-                            const response = await fetch(`http://localhost:8000/api/agent/todos/${sessionId}/${todo.id}/complete`, {
+                            const response = await fetch(`/api/agent/todos/${sessionId}/${todo.id}/complete`, {
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' }
                             })
@@ -1200,7 +1200,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
                       if (!sessionId) return
 
                       try {
-                        const response = await fetch('http://localhost:8000/api/agent/select-solution', {
+                        const response = await fetch('/api/agent/select-solution', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({

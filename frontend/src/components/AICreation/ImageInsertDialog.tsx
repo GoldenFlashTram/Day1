@@ -56,7 +56,7 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
 
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}/images/search`, {
+      const response = await fetch(`/api/creation/projects/${projectId}/images/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,7 +85,7 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
     if (img.type === 'web' && !img.is_downloaded && img.original_url && projectId) {
       try {
         message.loading({ content: '正在下载图片...', key: 'download' })
-        const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}/images/download`, {
+        const response = await fetch(`/api/creation/projects/${projectId}/images/download`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -99,8 +99,8 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
           message.success({ content: '图片下载成功', key: 'download' })
           // 使用下载后的本地URL（去掉后端地址，使用相对路径）
           let imageUrl = data.url
-          if (imageUrl.startsWith('http://localhost:8000')) {
-            imageUrl = imageUrl.replace('http://localhost:8000', '')
+          if (imageUrl.startsWith('')) {
+            imageUrl = imageUrl.replace('', '')
           }
           // 清理 alt 文本中的特殊字符，避免 Markdown 语法错误
           let altText = (img.title || '图片').replace(/[\[\]()]/g, '').trim()
@@ -142,9 +142,9 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
       // 如果是完整URL（网络图片），直接使用
       // 如果是相对路径（本地图片），也直接使用，MarkdownRenderer会处理
       // 确保URL格式正确
-      if (finalUrl.startsWith('http://localhost:8000')) {
+      if (finalUrl.startsWith('')) {
         // 如果已经包含后端地址，去掉它，使用相对路径
-        finalUrl = finalUrl.replace('http://localhost:8000', '')
+        finalUrl = finalUrl.replace('', '')
       }
       
       // 确保alt文本不为空，并清理特殊字符（避免Markdown语法错误）
@@ -204,7 +204,7 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
                    if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
                      return thumbnail
                    }
-                   return `http://localhost:8000${thumbnail}`
+                   return `${thumbnail}`
                  })()} 
                  alt={img.title} 
                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} 
@@ -216,7 +216,7 @@ const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
                      if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
                        target.src = originalUrl
                      } else {
-                       target.src = `http://localhost:8000${originalUrl}`
+                       target.src = `${originalUrl}`
                      }
                    }
                  }}

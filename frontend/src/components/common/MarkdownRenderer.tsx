@@ -102,7 +102,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             if (!imageUrl.startsWith('/')) {
               imageUrl = '/' + imageUrl
             }
-            imageUrl = `http://localhost:8000${imageUrl}`
+            imageUrl = `${imageUrl}`
           }
           if (imageUrl) {
             elements.push(
@@ -199,7 +199,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             if (!imageUrl.startsWith('/')) {
               imageUrl = '/' + imageUrl
             }
-            imageUrl = `http://localhost:8000${imageUrl}`
+            imageUrl = `${imageUrl}`
           }
           if (imageUrl) {
             elements.push(
@@ -328,7 +328,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         if (!imageUrl.startsWith('/')) {
           imageUrl = '/' + imageUrl
         }
-        imageUrl = `http://localhost:8000${imageUrl}`
+        imageUrl = `${imageUrl}`
       }
       parts.push(
         <img 

@@ -116,7 +116,7 @@ const WorkspacePage: React.FC = () => {
 
   // 选区弹窗：AI润色
   const handleSelectionPolish = useCallback(async (text: string): Promise<string> => {
-    const resp = await fetch('http://localhost:8000/api/assistant/quick-actions', {
+    const resp = await fetch('/api/assistant/quick-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'polish', text }),
@@ -128,7 +128,7 @@ const WorkspacePage: React.FC = () => {
 
   // 选区弹窗：AI审查
   const handleSelectionReview = useCallback(async (text: string): Promise<string> => {
-    const resp = await fetch('http://localhost:8000/api/tasks/review', {
+    const resp = await fetch('/api/tasks/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: text, domain: 'assembly' }),
@@ -144,7 +144,7 @@ const WorkspacePage: React.FC = () => {
 
   // 选区弹窗：AI补齐
   const handleSelectionFill = useCallback(async (text: string): Promise<string> => {
-    const resp = await fetch('http://localhost:8000/api/assistant/quick-actions', {
+    const resp = await fetch('/api/assistant/quick-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'expand', text }),
@@ -156,7 +156,7 @@ const WorkspacePage: React.FC = () => {
 
   // 选区弹窗：AI校对
   const handleSelectionProofread = useCallback(async (text: string): Promise<string> => {
-    const resp = await fetch('http://localhost:8000/api/tasks/proofread', {
+    const resp = await fetch('/api/tasks/proofread', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: text }),
@@ -192,7 +192,7 @@ const WorkspacePage: React.FC = () => {
   // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/creation/projects')
+      const response = await fetch('/api/creation/projects')
       if (response.ok) {
         let list = await response.json()
         list = list.items || list
@@ -200,7 +200,7 @@ const WorkspacePage: React.FC = () => {
         // Auto-create a default project when none exist
         if (list.length === 0) {
           try {
-            const createRes = await fetch('http://localhost:8000/api/creation/projects', {
+            const createRes = await fetch('/api/creation/projects', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: '默认项目' })
@@ -235,7 +235,7 @@ const WorkspacePage: React.FC = () => {
   const fetchProjectContent = async (projectId: number) => {
     try {
       console.log('[fetchProjectContent] 开始加载项目内容，projectId:', projectId)
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}/content`)
+      const response = await fetch(`/api/creation/projects/${projectId}/content`)
       if (response.ok) {
         const data = await response.json()
         const newContent = data.content || ''
@@ -324,7 +324,7 @@ const WorkspacePage: React.FC = () => {
     }
     setCreating(true)
     try {
-      const response = await fetch('http://localhost:8000/api/creation/projects', {
+      const response = await fetch('/api/creation/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newProjectName })
@@ -347,7 +347,7 @@ const WorkspacePage: React.FC = () => {
   // 删除项目
   const handleDeleteProject = async (projectId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}`, {
+      const response = await fetch(`/api/creation/projects/${projectId}`, {
         method: 'DELETE'
       })
       if (response.ok) {
@@ -382,7 +382,7 @@ const WorkspacePage: React.FC = () => {
     if (!currentProjectId) return
     console.log('[handleSave] 开始保存，内容长度:', editorContent.length, '前100字符:', editorContent.substring(0, 100))
     try {
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${currentProjectId}/content`, {
+      const response = await fetch(`/api/creation/projects/${currentProjectId}/content`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: editorContent })
@@ -398,7 +398,7 @@ const WorkspacePage: React.FC = () => {
             if (Array.isArray(parsed) && parsed.length > 0) {
               const { edits, row_changes } = diffTemplateSections(originalSections, parsed as TemplateSection[])
               if (edits.length > 0 || row_changes.length > 0) {
-                fetch('http://localhost:8000/api/profile/assembly/learn-feedback', {
+                fetch('/api/profile/assembly/learn-feedback', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ domain: 'assembly', project_id: String(currentProjectId), edits, row_changes }),
@@ -462,7 +462,7 @@ const WorkspacePage: React.FC = () => {
             if (!imageUrl.startsWith('/')) {
               imageUrl = '/' + imageUrl
             }
-            imageUrl = `http://localhost:8000${imageUrl}`
+            imageUrl = `${imageUrl}`
           }
           
           // 清理 alt 文本
@@ -625,8 +625,8 @@ const WorkspacePage: React.FC = () => {
 
     try {
       const endpoint = format === 'pdf'
-        ? 'http://localhost:8000/api/export/content-pdf'
-        : 'http://localhost:8000/api/export/content-word'
+        ? '/api/export/content-pdf'
+        : '/api/export/content-word'
 
       const response = await fetch(endpoint, {
         method: 'POST',

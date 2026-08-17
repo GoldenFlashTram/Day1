@@ -95,7 +95,7 @@ const MarkdownTiptapEditor = React.forwardRef<any, MarkdownTiptapEditorProps>(({
                 }
                 normalizedSrc = normalizedSrc.replace(/\/+/g, '/')
                 
-                const fullUrl = `http://localhost:8000${normalizedSrc}`
+                const fullUrl = `${normalizedSrc}`
                 console.log('[Tiptap Image parseHTML] 转换后的URL:', fullUrl)
                 return fullUrl
               },

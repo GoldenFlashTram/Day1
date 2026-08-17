@@ -21,7 +21,7 @@ interface Props {
   onChange: (html: string) => void
 }
 
-const API_BASE = 'http://localhost:8000/api/creation'
+const API_BASE = '/api/creation'
 
 const HtmlTableEditor: React.FC<Props> = ({ projectId, onSave, value, onChange }) => {
   const [pages, setPages] = useState<TablePage[]>([])

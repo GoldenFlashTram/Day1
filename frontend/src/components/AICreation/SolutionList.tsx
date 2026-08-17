@@ -59,7 +59,7 @@ export const SolutionList: React.FC<SolutionListProps> = ({
     // 如果没有提供onConfirm，调用API
     if (sessionId) {
       try {
-        const response = await fetch(`http://localhost:8000/api/agent/select-solution`, {
+        const response = await fetch(`/api/agent/select-solution`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

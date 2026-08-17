@@ -137,7 +137,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({
     // 处理图片路径，添加后端地址前缀
     const getImageUrl = (path: string) => {
       const cleanPath = path.replace(/^backend[\\/]/, '').replace(/\\/g, '/')
-      return `http://localhost:8000/static/${cleanPath}`
+      return `/static/${cleanPath}`
     }
 
     return (

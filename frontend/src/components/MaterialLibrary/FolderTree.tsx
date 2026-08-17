@@ -32,7 +32,7 @@ interface FolderTreeProps {
   onLearnFolder?: (folderKey: string) => void
 }
 
-const API_BASE = 'http://localhost:8000/api/creation'
+const API_BASE = '/api/creation'
 
 const FolderTree: React.FC<FolderTreeProps> = ({
   folders,

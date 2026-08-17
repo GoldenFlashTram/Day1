@@ -21,7 +21,7 @@ import KnowledgeScopeSelector from '../MaterialLibrary/KnowledgeScopeSelector'
 
 const { Dragger } = Upload
 
-const API_BASE = 'http://localhost:8000/api/creation'
+const API_BASE = '/api/creation'
 const SCOPE_STORAGE_KEY = 'knowledge_scope_selection'
 const POLL_INTERVAL = 2000
 
@@ -132,7 +132,7 @@ const MaterialDrawer: React.FC<MaterialDrawerProps> = ({
 
   const pollParseStatus = useCallback(async (materialId: number) => {
     try {
-      const resp = await fetch(`http://localhost:8000/api/creation/materials/${materialId}/parse-status`)
+      const resp = await fetch(`/api/creation/materials/${materialId}/parse-status`)
       if (!resp.ok) return
       const data = await resp.json()
 
@@ -419,7 +419,7 @@ const MaterialDrawer: React.FC<MaterialDrawerProps> = ({
 
       const textContent = content.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
 
-      const resp = await fetch(`http://localhost:8000/api/profile/${file.domain || 'assembly'}/learn`, {
+      const resp = await fetch(`/api/profile/${file.domain || 'assembly'}/learn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -463,7 +463,7 @@ const MaterialDrawer: React.FC<MaterialDrawerProps> = ({
     setBatchLearn({ active: true, current: 0, total: fileIds.length, file: '' })
 
     try {
-      const resp = await fetch(`http://localhost:8000/api/profile/${domain}/learn-batch`, {
+      const resp = await fetch(`/api/profile/${domain}/learn-batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_ids: fileIds }),

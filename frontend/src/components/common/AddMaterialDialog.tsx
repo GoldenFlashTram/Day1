@@ -60,7 +60,7 @@ const AddMaterialDialog: React.FC<AddMaterialDialogProps> = ({
   const fetchMaterials = async () => {
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:8000/api/creation/materials')
+      const response = await fetch('/api/creation/materials')
       if (response.ok) {
         const data = await response.json()
         setMaterials(data.items || [])
@@ -184,7 +184,7 @@ const AddMaterialDialog: React.FC<AddMaterialDialogProps> = ({
 
     setSubmitting(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}/materials`, {
+      const response = await fetch(`/api/creation/projects/${projectId}/materials`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

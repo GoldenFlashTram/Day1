@@ -46,7 +46,7 @@ const MaterialsPanel: React.FC<MaterialsPanelProps> = ({
 
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/creation/projects/${projectId}/materials`)
+      const response = await fetch(`/api/creation/projects/${projectId}/materials`)
       if (response.ok) {
         const data = await response.json()
         // 适配新数据结构 - 使用文档素材

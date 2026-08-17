@@ -143,7 +143,7 @@ const InlineMarkdownEditor = React.forwardRef<HTMLTextAreaElement, InlineMarkdow
         if (!imageUrl.startsWith('/')) {
           imageUrl = '/' + imageUrl
         }
-        imageUrl = `http://localhost:8000${imageUrl}`
+        imageUrl = `${imageUrl}`
       }
 
       images.push({
@@ -259,10 +259,10 @@ const InlineMarkdownEditor = React.forwardRef<HTMLTextAreaElement, InlineMarkdow
   // 处理拖拽开始
   const handleDragStart = useCallback((e: React.DragEvent, img: ImagePosition) => {
     setDraggedImage(img)
-    // 获取原始 URL（去掉 http://localhost:8000 前缀）
+    // 获取原始 URL（去掉  前缀）
     let originalUrl = img.url
-    if (originalUrl.startsWith('http://localhost:8000')) {
-      originalUrl = originalUrl.replace('http://localhost:8000', '')
+    if (originalUrl.startsWith('')) {
+      originalUrl = originalUrl.replace('', '')
     }
     e.dataTransfer.setData('text/plain', JSON.stringify({
       type: 'image',
