@@ -25,7 +25,7 @@ import SelectionDialog from '../components/editor/SelectionDialog'
 import type { TemplateSection, CellInfo } from '../types/template'
 import ProcessContentView from '../components/common/ProcessContentView'
 import { markdownToHtml } from '../utils/markdownConverter'
-import { structuredDocToSections } from '../utils/templateTransform'
+import { structuredDocToSections, applySectionsToDoc } from '../utils/templateTransform'
 import { diffTemplateSections } from '../utils/templateDiff'
 import { colors } from '../styles/design-tokens'
 import '../styles/global.css'
@@ -91,8 +91,13 @@ const WorkspacePage: React.FC = () => {
     (sections: TemplateSection[]) => {
       if (!currentProjectId) return
       setEditorContent(currentProjectId, JSON.stringify(sections))
+      // 同步写回 editorTemplateData，消除双源竞争（含直接编辑单元格路径）：
+      // templateSections 渲染优先读 editorTemplateData，若只写 editorContent，
+      // 替换/编辑结果会被旧 editorTemplateData 遮蔽。
+      const doc = useCreationStore.getState().editorTemplateData
+      if (doc) setEditorTemplateData(applySectionsToDoc(doc, sections))
     },
-    [currentProjectId, setEditorContent],
+    [currentProjectId, setEditorContent, setEditorTemplateData],
   )
 
   // 选区弹窗：发送给AI对话
@@ -100,18 +105,35 @@ const WorkspacePage: React.FC = () => {
     _setSelectedText(text)
   }, [])
 
-  // 选区弹窗：替换单元格原文
-  const handleSelectionReplaceCell = useCallback((cellInfo: CellInfo, newText: string) => {
-    const sections = templateSections
-    if (cellInfo.sectionIndex < 0 || cellInfo.sectionIndex >= sections.length) return
-    const section = sections[cellInfo.sectionIndex]
-    const rows = [...(section.rows || [])]
-    if (cellInfo.rowIndex < 0 || cellInfo.rowIndex >= rows.length) return
-    rows[cellInfo.rowIndex] = { ...rows[cellInfo.rowIndex], [cellInfo.colKey]: newText }
-    const updatedSection = { ...section, rows }
-    const next = [...sections]
-    next[cellInfo.sectionIndex] = updatedSection
-    handleTemplateSectionsChange(next)
+  // 选区弹窗：替换单元格原文（多格时按行分布：第 N 行 → 第 N 格，
+  // 行数不足则剩余格不动，行数多余则并入最后一格）
+  const handleSelectionReplaceCells = useCallback((cells: CellInfo[], newText: string) => {
+    if (cells.length === 0) return
+    const sections = templateSections.map((s) => ({ ...s, rows: [...(s.rows || [])] }))
+
+    const lines = newText.split('\n')
+    let applied = 0
+
+    for (let i = 0; i < cells.length; i++) {
+      const { sectionIndex, rowIndex, colKey } = cells[i]
+      if (sectionIndex < 0 || sectionIndex >= sections.length) continue
+      const section = sections[sectionIndex]
+      if (rowIndex < 0 || rowIndex >= section.rows.length) continue
+
+      const cellText =
+        i < cells.length - 1
+          ? lines[i]
+          : lines.slice(i).join('\n')              // 最后一格：吸收剩余所有行
+
+      // 行数不足（该格无对应行）→ 跳过，保持原内容不动
+      if (i >= lines.length) continue
+
+      section.rows[rowIndex] = { ...section.rows[rowIndex], [colKey]: cellText }
+      applied++
+    }
+
+    if (applied === 0) return
+    handleTemplateSectionsChange(sections)
   }, [templateSections, handleTemplateSectionsChange])
 
   // 选区弹窗：AI润色
@@ -182,7 +204,7 @@ const WorkspacePage: React.FC = () => {
   // 选区处理弹窗状态
   const [selectionDialogOpen, setSelectionDialogOpen] = useState(false)
   const [selectionDialogText, setSelectionDialogText] = useState('')
-  const [selectionDialogCellInfo, setSelectionDialogCellInfo] = useState<CellInfo | null>(null)
+  const [selectionDialogCells, setSelectionDialogCells] = useState<CellInfo[]>([])
 
   // 预览模式状态（智能写作结果预览）
   const [previewMode, setPreviewMode] = useState(false)
@@ -953,9 +975,9 @@ const WorkspacePage: React.FC = () => {
                     <TemplateContentEditor
                       sections={templateSections}
                       onChange={handleTemplateSectionsChange}
-                      onPasteToChat={(text, cellInfo) => {
+                      onPasteToChat={(text, cells) => {
                         setSelectionDialogText(text)
-                        setSelectionDialogCellInfo(cellInfo)
+                        setSelectionDialogCells(cells)
                         setSelectionDialogOpen(true)
                       }}
                     />
@@ -1094,11 +1116,11 @@ const WorkspacePage: React.FC = () => {
       <SelectionDialog
         open={selectionDialogOpen}
         selectedText={selectionDialogText}
-        cellInfo={selectionDialogCellInfo}
+        cells={selectionDialogCells}
         maxLength={200}
         onClose={() => setSelectionDialogOpen(false)}
         onSendToChat={handleSelectionSendToChat}
-        onReplaceCell={handleSelectionReplaceCell}
+        onReplaceCell={handleSelectionReplaceCells}
         onPolish={handleSelectionPolish}
         onReview={handleSelectionReview}
         onFill={handleSelectionFill}

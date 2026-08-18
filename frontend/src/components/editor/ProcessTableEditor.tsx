@@ -30,7 +30,7 @@ interface Props {
   section: TemplateSection
   onChange: (section: TemplateSection) => void
   sectionIndex?: number
-  onPasteToChat?: (text: string, cellInfo: CellInfo) => void
+  onPasteToChat?: (text: string, cells: CellInfo[]) => void
 }
 
 const cellStyle: React.CSSProperties = {
@@ -137,12 +137,12 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex =
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: string } | null>(null)
 
   // --- Windows-style drag selection (draw rectangle to select cells) ---
-  const { selection: dragSelection, isVisible: isSelVisible, dragRect } =
+  const { selection: dragSelection, isVisible: isSelVisible, dragRect, clearSelection } =
     useDragSelection(containerRef, sectionIndex, { maxLength: 200 })
 
   const handlePasteSelection = useCallback(() => {
     if (dragSelection && onPasteToChat) {
-      onPasteToChat(dragSelection.text, dragSelection.cellInfo)
+      onPasteToChat(dragSelection.text, dragSelection.cells)
     }
   }, [dragSelection, onPasteToChat])
 
@@ -374,12 +374,12 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex =
       )}
 
       {/* Floating action box — appears after drag selection completes */}
-      {onPasteToChat && isSelVisible && dragSelection && (
+      {onPasteToChat && isSelVisible && dragSelection && dragRect && (
         <div
           style={{
             position: 'fixed',
-            top: Math.max(8, (dragRect?.startY ?? 100) - 36),
-            left: Math.min(window.innerWidth - 160, dragRect?.startX ?? 100),
+            top: Math.max(8, Math.min(dragRect.startY, dragRect.endY) - 36),
+            left: Math.min(window.innerWidth - 200, Math.min(dragRect.startX, dragRect.endX)),
             zIndex: 1000,
             background: '#1890ff',
             color: '#fff',
@@ -395,12 +395,16 @@ const ProcessTableEditor: React.FC<Props> = ({ section, onChange, sectionIndex =
             gap: 6,
           }}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={handlePasteSelection}
+          onClick={() => {
+            handlePasteSelection()
+            clearSelection()
+          }}
         >
           <span>📎</span>
           <span>处理选区</span>
           <span style={{ opacity: 0.8, fontSize: 11 }}>
-            {dragSelection.originalLength}字{dragSelection.isTruncated ? ' (已截断)' : ''}
+            {dragSelection.originalLength}字 · {dragSelection.cells.length}格
+            {dragSelection.isTruncated ? ' (已截断)' : ''}
           </span>
         </div>
       )}

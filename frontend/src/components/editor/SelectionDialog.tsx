@@ -26,11 +26,11 @@ const { Text } = Typography
 export interface SelectionDialogProps {
   open: boolean
   selectedText: string
-  cellInfo: CellInfo | null
+  cells: CellInfo[]
   maxLength: number
   onClose: () => void
   onSendToChat: (text: string) => void
-  onReplaceCell: (cellInfo: CellInfo, newText: string) => void
+  onReplaceCell: (cells: CellInfo[], newText: string) => void
   onPolish: (text: string) => Promise<string>
   onReview: (text: string) => Promise<string>
   onFill: (text: string) => Promise<string>
@@ -40,7 +40,7 @@ export interface SelectionDialogProps {
 const SelectionDialog: React.FC<SelectionDialogProps> = ({
   open,
   selectedText,
-  cellInfo,
+  cells,
   maxLength,
   onClose,
   onSendToChat,
@@ -74,10 +74,17 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
     onClose()
   }
 
+  /**
+   * Distribute edited lines back to cells (multi-cell selections):
+   *  - lines === cells  → one line per cell
+   *  - lines <  cells   → first N lines fill first N cells, rest untouched
+   *  - lines >  cells   → extra lines join the last cell with '\n'
+   *  - blank lines are kept verbatim (user may intend empty cells)
+   */
   const handleReplaceCell = () => {
-    if (!cellInfo) return
-    onReplaceCell(cellInfo, editedText)
-    message.success('已替换原文')
+    if (cells.length === 0) return
+    onReplaceCell(cells, editedText)
+    message.success(cells.length === 1 ? '已替换原文' : `已按行替换 ${cells.length} 格`)
     onClose()
   }
 
@@ -161,9 +168,13 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
           <Tag style={{ fontSize: 11 }}>
             {selectedText.length}/{maxLength} 字
           </Tag>
-          {cellInfo && (
+          {cells.length === 1 ? (
             <Tag color="blue" style={{ fontSize: 11 }}>
-              {cellInfo.colKey} · 第{cellInfo.rowIndex + 1}行
+              {cells[0].colKey} · 第{cells[0].rowIndex + 1}行
+            </Tag>
+          ) : (
+            <Tag color="blue" style={{ fontSize: 11 }}>
+              {cells.length} 格选中（替换按行分布）
             </Tag>
           )}
         </div>
@@ -216,7 +227,7 @@ const SelectionDialog: React.FC<SelectionDialogProps> = ({
         <Button
           icon={<EditOutlined />}
           onClick={handleReplaceCell}
-          disabled={!editedText.trim() || !cellInfo}
+          disabled={!editedText.trim() || cells.length === 0}
         >
           替换原文
         </Button>

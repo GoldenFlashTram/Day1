@@ -14,7 +14,7 @@ const { Title } = Typography
 interface Props {
   sections: TemplateSection[]
   onChange: (sections: TemplateSection[]) => void
-  onPasteToChat?: (text: string, cellInfo: CellInfo) => void
+  onPasteToChat?: (text: string, cells: CellInfo[]) => void
 }
 
 const TemplateContentEditor: React.FC<Props> = ({ sections, onChange, onPasteToChat }) => {

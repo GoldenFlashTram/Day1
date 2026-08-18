@@ -41,3 +41,34 @@ export function structuredDocToSections(doc: StructuredDocument): TemplateSectio
     }
   })
 }
+
+/**
+ * Write edited TemplateSection[] back into a StructuredDocument.
+ *
+ * Matches chapters by section_id === chapter_code and updates only the
+ * mutable data fields (filled_data / left_data / right_data / flow_steps /
+ * field_values). Chapter metadata (title, table_type, fill_sources...) and
+ * doc-level fields are preserved as-is. Unmatched chapters pass through
+ * untouched. Immutable — returns a new doc.
+ */
+export function applySectionsToDoc(
+  doc: StructuredDocument,
+  sections: TemplateSection[],
+): StructuredDocument {
+  const sectionsById = new Map(sections.map((s) => [s.section_id, s]))
+  return {
+    ...doc,
+    chapters: doc.chapters.map((ch) => {
+      const section = sectionsById.get(ch.chapter_code)
+      if (!section) return ch
+      return {
+        ...ch,
+        filled_data: section.rows ?? ch.filled_data,
+        ...(section.left_data !== undefined && { left_data: section.left_data }),
+        ...(section.right_data !== undefined && { right_data: section.right_data }),
+        ...(section.flow_steps !== undefined && { flow_steps: section.flow_steps }),
+        ...(section.field_values !== undefined && { field_values: section.field_values }),
+      }
+    }),
+  }
+}

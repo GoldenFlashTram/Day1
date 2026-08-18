@@ -5,16 +5,25 @@
  * rectangle, and on mouse-up all text inside the rectangle is extracted.
  * Unlike native text selection, this captures text by bounding-box overlap,
  * works across cells, and draws a visible selection rectangle.
+ *
+ * Interaction rules:
+ *  - Drag < 4px = plain click: no selection, cell regains focus for editing.
+ *  - Drag ≥ 4px = selection: rectangle stays visible (as highlight) until
+ *    the next mousedown or clearSelection().
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CellInfo } from '../types/template'
 
 export interface DragSelectionInfo {
   text: string
-  cellInfo: CellInfo
+  /** All hit cells in traversal order (multi-cell selections supported). */
+  cells: CellInfo[]
   originalLength: number
   isTruncated: boolean
 }
+
+/** Movement below this many px counts as a click, not a drag. */
+const CLICK_THRESHOLD_PX = 4
 
 interface UseDragSelectionOptions {
   maxLength?: number
@@ -23,8 +32,9 @@ interface UseDragSelectionOptions {
 interface UseDragSelectionReturn {
   selection: DragSelectionInfo | null
   isVisible: boolean
-  /** Current drag rectangle (screen coords), null when not dragging */
+  /** Current drag rectangle (screen coords), null when idle. Kept after mouseup as selection highlight. */
   dragRect: { startX: number; startY: number; endX: number; endY: number } | null
+  clearSelection: () => void
 }
 
 interface CellTextHit {
@@ -116,6 +126,10 @@ export function useDragSelection(
       // Only activate drag-select on plain mousedown without Ctrl/Cmd
       if (e.ctrlKey || e.metaKey) return
 
+      // Starting a new gesture clears any previous selection highlight
+      setSelection(null)
+      setIsVisible(false)
+
       isDraggingRef.current = true
       startPosRef.current = { x: e.clientX, y: e.clientY }
       setDragRect({ startX: e.clientX, startY: e.clientY, endX: e.clientX, endY: e.clientY })
@@ -154,6 +168,21 @@ export function useDragSelection(
         return
       }
 
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+
+      // Plain click (< threshold): treat as normal cell click — restore
+      // focus so the contentEditable cell can be edited directly.
+      if (Math.abs(dx) < CLICK_THRESHOLD_PX && Math.abs(dy) < CLICK_THRESHOLD_PX) {
+        setDragRect(null)
+        setSelection(null)
+        setIsVisible(false)
+        const target = e.target as HTMLElement
+        const td = target.closest?.('td[contenteditable]') as HTMLElement | null
+        if (td) td.focus()
+        return
+      }
+
       // Collect all cells
       const cells = collectCells(container, sectionIndex)
 
@@ -162,32 +191,28 @@ export function useDragSelection(
         rectOverlaps(c.rect, start.x, start.y, e.clientX, e.clientY),
       )
 
-      // Clear drag rect
-      setDragRect(null)
-
       if (hitCells.length === 0) {
+        setDragRect(null)
         setSelection(null)
         setIsVisible(false)
         return
       }
 
-      // If only one cell hit, use full cell text
-      // If multiple cells hit, concatenate their text
-      let text: string
-      let cellInfo: CellInfo
-
-      if (hitCells.length === 1) {
-        text = hitCells[0].text
-        cellInfo = hitCells[0].cellInfo
-      } else {
-        text = hitCells.map((c) => c.text).join('\n')
-        cellInfo = hitCells[0].cellInfo
-      }
+      // Single cell: full cell text. Multiple cells: join with newline.
+      // All hit cells are recorded so replace can distribute lines back.
+      const text = hitCells.map((c) => c.text).join('\n')
 
       const isTruncated = text.length > maxLength
       const truncated = isTruncated ? text.slice(0, maxLength) : text
 
-      setSelection({ text: truncated, cellInfo, originalLength: text.length, isTruncated })
+      // Keep dragRect as the persistent selection highlight (cleared on next
+      // mousedown / clearSelection). The floating action button anchors to it.
+      setSelection({
+        text: truncated,
+        cells: hitCells.map((c) => c.cellInfo),
+        originalLength: text.length,
+        isTruncated,
+      })
       setIsVisible(true)
     },
     [containerRef, sectionIndex, maxLength],
@@ -196,6 +221,7 @@ export function useDragSelection(
   const clearSelection = useCallback(() => {
     setSelection(null)
     setIsVisible(false)
+    setDragRect(null)
   }, [])
 
   useEffect(() => {
